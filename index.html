@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RolePilot | Casting application copilot</title>
+  <style>
+    :root{
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      --bg:#090d12;--panel:#111820;--panel2:#0d131a;--border:#24303d;
+      --text:#f4f7fb;--muted:#91a0b1;--green:#a6ff78;--blue:#69dbff;--amber:#ffd47a;
+    }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text)}
+    button{font:inherit}.shell{max-width:1400px;margin:auto;padding:24px}
+    .top{display:flex;align-items:center;justify-content:space-between;padding:4px 0 22px}
+    .brand{display:flex;gap:12px;align-items:center}.logo{width:42px;height:42px;border-radius:13px;
+      display:grid;place-items:center;background:linear-gradient(135deg,var(--green),var(--blue));color:#07100a;font-weight:900}
+    .brand strong{display:block}.brand small{color:var(--muted)}
+    .live{display:flex;align-items:center;gap:8px;border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--amber)}.live.ok .dot{background:var(--green)}
+    .hero{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:end;margin:10px 0 24px}
+    .kicker{font-size:11px;letter-spacing:.14em;font-weight:850;color:var(--blue)}
+    h1{font-size:clamp(42px,6vw,76px);line-height:.96;letter-spacing:-.055em;margin:10px 0 16px;max-width:920px}
+    .hero p{color:#b5c0cd;font-size:18px;max-width:800px;margin:0}
+    .metric{border:1px solid rgba(166,255,120,.22);background:rgba(166,255,120,.06);border-radius:20px;padding:22px}
+    .metric span,.metric small{display:block;color:var(--muted)}.metric strong{display:block;font-size:28px;margin:4px 0;color:#dfffd0}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:18px}
+    .panel{border:1px solid var(--border);background:var(--panel);border-radius:20px;min-height:570px}
+    .queue{padding:18px}.detail{padding:26px}.head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+    h2,h3{margin:4px 0}.count{background:#1a2430;border-radius:10px;padding:6px 10px;font-weight:800}
+    .list{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+    .op{width:100%;text-align:left;padding:15px;border-radius:14px;border:1px solid transparent;background:var(--panel2);color:inherit;cursor:pointer}
+    .op:hover,.op.active{border-color:rgba(105,219,255,.5);background:#101b24}
+    .row{display:flex;justify-content:space-between;gap:10px}.title{font-weight:800}.meta{color:var(--muted);font-size:12px;margin-top:5px}
+    .chip{font-size:10px;letter-spacing:.08em;font-weight:900;padding:5px 8px;border-radius:999px;background:#d9e1eb;color:#10151b;height:max-content}
+    .chip.ready{background:#c9ffa9}.chip.record{background:#ffe095}.chip.review{background:#ade9ff}
+    .actions{display:flex;gap:10px;margin:24px 0}.btn{border:0;border-radius:11px;padding:11px 15px;font-weight:850;cursor:pointer}
+    .primary{background:#f4f7fb;color:#111}.secondary{background:#202b37;color:white;border:1px solid #314051}.approve{background:var(--green);color:#071006}
+    .btn:disabled{opacity:.4;cursor:not-allowed}.section{border-top:1px solid var(--border);padding-top:22px;margin-top:22px}
+    .summary{padding:15px 17px;background:var(--panel2);border:1px solid var(--border);border-radius:14px;color:#cad4df;margin:16px 0}
+    .score{font-size:12px;color:#d7ffc4;border:1px solid rgba(166,255,120,.22);background:rgba(166,255,120,.08);padding:6px 9px;border-radius:999px}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:26px}ul{padding:0;list-style:none}li{padding:9px 11px;border:1px solid #202c37;background:var(--panel2);border-radius:11px;margin:7px 0;color:#d7dee7}
+    .gap{padding:12px 14px;border-radius:12px;background:rgba(255,212,122,.07);border:1px solid rgba(255,212,122,.2);color:#f6d894;margin-top:14px}
+    .audit{padding-left:22px}.audit li{background:transparent;border:0;border-bottom:1px solid #1c2731;border-radius:0;padding-left:4px}
+    .approval{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:18px;border-radius:16px;border:1px solid rgba(105,219,255,.22);background:linear-gradient(135deg,rgba(105,219,255,.06),rgba(166,255,120,.05))}
+    .approval p{color:var(--muted);margin:5px 0 0}.result{margin-top:12px;padding:12px 14px;border-radius:11px;background:var(--panel2);border:1px solid var(--border)}
+    .hidden{display:none!important}.error{color:#ff9b9b}footer{display:flex;justify-content:space-between;gap:16px;color:#718092;font-size:12px;padding:20px 4px}
+    @media(max-width:900px){.hero{grid-template-columns:1fr}.metric{display:none}.grid{grid-template-columns:1fr}.cols{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div class="brand"><div class="logo">R</div><div><strong>RolePilot</strong><small>Casting application copilot</small></div></div>
+    <div class="live" id="livePill"><span class="dot"></span><span id="liveLabel">Connecting to Xano...</span></div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="kicker">DEVNETWORK API + CLOUD + AI HACKATHON 2026</div>
+      <h1>Stop filling the same casting form again.</h1>
+      <p>RolePilot turns a casting brief into a controlled workflow, matches approved materials, persists application state in Xano, and stops before the final external action.</p>
+    </div>
+    <div class="metric"><span>Human control</span><strong>always on</strong><small>Preparation is automated. Final submission is not.</small></div>
+  </section>
+
+  <section class="grid">
+    <aside class="panel queue">
+      <div class="head"><div><div class="kicker">LIVE FROM XANO</div><h2>Opportunity queue</h2></div><span class="count" id="count">0</span></div>
+      <div class="list" id="list"></div>
+    </aside>
+
+    <section class="panel detail">
+      <div id="empty"><h2>Loading opportunities...</h2><p class="meta">The queue is fetched from the live RolePilot API group in Xano.</p></div>
+      <div id="content" class="hidden">
+        <div class="head">
+          <div><div class="kicker" id="brand"></div><h2 id="title"></h2><div class="meta" id="deadline"></div></div>
+          <span class="chip" id="status"></span>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="analyze">Analyze readiness</button>
+          <button class="btn secondary" id="prepare" disabled>Prepare application</button>
+        </div>
+
+        <div class="section hidden" id="analysis">
+          <div class="head"><div><div class="kicker">READINESS CHECK</div><h3>What RolePilot understood</h3></div><span class="score" id="score"></span></div>
+          <div class="summary" id="summary"></div>
+          <div class="cols"><div><h3>Requirements</h3><ul id="requirements"></ul></div><div><h3>Matched approved assets</h3><ul id="assets"></ul></div></div>
+          <div class="gap" id="gaps"></div>
+        </div>
+
+        <div class="section hidden" id="run">
+          <div class="head"><div><div class="kicker">CONTROLLED EXECUTION</div><h3>Application run</h3></div><span class="score">PERSISTED IN XANO</span></div>
+          <ol class="audit" id="audit"></ol>
+          <div class="approval">
+            <div><div class="kicker">APPROVAL GATE</div><h3>Review before anything is sent</h3><p>The demo records the decision in Xano but never submits a real casting application.</p></div>
+            <div><button class="btn secondary" id="changes">Needs changes</button> <button class="btn approve" id="approve">Approve demo state</button></div>
+          </div>
+          <div class="result hidden" id="result"></div>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <footer><span>Live backend: Xano Essential, Frankfurt</span><span>Built with Xano Agent + Google Gemini, JavaScript, REST APIs</span></footer>
+</main>
+
+<script>
+const API="https://xtbm-3nan-h5yy.f2.xano.io/api:rolepilot";
+const state={items:[],selected:null,analysis:null,run:null};
+const $=id=>document.getElementById(id);
+
+async function request(path,opts={}){
+  const r=await fetch(API+path,{headers:{"Content-Type":"application/json",...(opts.headers||{})},...opts});
+  if(!r.ok) throw new Error("Xano HTTP "+r.status);
+  return r.json();
+}
+function esc(v=""){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#039;",'"':"&quot;"}[c]));}
+function cls(s){return s==="READY"?"ready":s==="RECORD"?"record":"review";}
+function human(s){return s==="READY"?"READY":s==="RECORD"?"NEEDS RECORDING":"REVIEW";}
+
+function renderList(){
+  $("count").textContent=state.items.length;
+  $("list").innerHTML="";
+  state.items.forEach(o=>{
+    const b=document.createElement("button"); b.className="op "+(state.selected?.id===o.id?"active":"");
+    b.innerHTML=`<div class="row"><div><div class="title">${esc(o.title)}</div><div class="meta">${esc(o.brand)}</div></div><span class="chip ${cls(o.status)}">${human(o.status)}</span></div><div class="meta">${esc(o.deadline)}</div>`;
+    b.onclick=()=>select(o); $("list").appendChild(b);
+  });
+}
+function select(o){
+  state.selected=o; state.analysis=null; state.run=null; renderList();
+  $("empty").classList.add("hidden"); $("content").classList.remove("hidden");
+  $("analysis").classList.add("hidden"); $("run").classList.add("hidden"); $("result").classList.add("hidden");
+  $("brand").textContent=o.brand; $("title").textContent=o.title; $("deadline").textContent=o.deadline;
+  $("status").textContent=human(o.status); $("status").className="chip "+cls(o.status);
+  $("analyze").disabled=false; $("analyze").textContent="Analyze readiness"; $("prepare").disabled=true;
+}
+function listInto(id,arr){$(id).innerHTML=(arr||[]).map(x=>`<li>${esc(typeof x==="string"?x:JSON.stringify(x))}</li>`).join("");}
+
+$("analyze").onclick=async()=>{
+  const b=$("analyze"); b.disabled=true;b.textContent="Analyzing...";
+  try{
+    const a=await request("/analyze",{method:"POST",body:JSON.stringify({opportunity_id:state.selected.id,raw_text:state.selected.raw_text})});
+    state.analysis=a.analysis||a;
+    $("score").textContent=state.analysis.readiness+"% ready"; $("summary").textContent=state.analysis.summary;
+    listInto("requirements",state.analysis.requirements); listInto("assets",state.analysis.assets);
+    $("gaps").textContent=(state.analysis.gaps||[]).length?"Needs attention: "+state.analysis.gaps.join(" | "):"No blocking gaps detected.";
+    $("analysis").classList.remove("hidden"); $("prepare").disabled=!state.analysis.can_prepare; b.textContent="Analysis complete";
+    $("liveLabel").textContent="Xano live - analysis API";
+  }catch(e){b.textContent="Analysis failed";$("summary").textContent=e.message;$("analysis").classList.remove("hidden");}
+};
+
+$("prepare").onclick=async()=>{
+  const b=$("prepare");b.disabled=true;b.textContent="Preparing...";
+  try{
+    const p=await request("/runs",{method:"POST",body:JSON.stringify({opportunity_id:state.selected.id})});
+    const base=p.run||p;
+    state.run={...base,audit_events:p.audit_events||base.audit_events||[]};
+    $("audit").innerHTML=state.run.audit_events.map((x)=>`<li>${esc(typeof x==="string"?x:(x.event||JSON.stringify(x)))}</li>`).join("");
+    $("run").classList.remove("hidden"); b.textContent="Application prepared"; $("liveLabel").textContent="Xano live - state persisted";
+    $("run").scrollIntoView({behavior:"smooth",block:"nearest"});
+  }catch(e){b.textContent="Preparation failed";alert(e.message);}
+};
+
+async function approval(approved){
+  try{
+    const out=await request(`/runs/${state.run.id}/approval`,{method:"POST",body:JSON.stringify({approved})});
+    $("result").classList.remove("hidden");
+    $("result").textContent=approved?"Approval recorded in Xano. No real application was submitted.":"Changes requested and recorded in Xano. External action remains blocked.";
+    $("liveLabel").textContent="Xano live - approval audited";
+    console.log(out);
+  }catch(e){$("result").classList.remove("hidden");$("result").textContent="Approval error: "+e.message;$("result").classList.add("error");}
+}
+$("approve").onclick=()=>approval(true); $("changes").onclick=()=>approval(false);
+
+(async()=>{
+  try{
+    const data=await request("/opportunities");
+    state.items=Array.isArray(data)?data:(data.items||data.opportunities||[]);
+    if(!state.items.length) throw new Error("No opportunities returned");
+    $("livePill").classList.add("ok");$("liveLabel").textContent="Xano live - opportunities API";
+    renderList();select(state.items[0]);
+  }catch(e){
+    $("liveLabel").textContent="Xano connection failed";$("empty").innerHTML=`<h2>Could not reach Xano</h2><p class="meta">${esc(e.message)}</p>`;
+  }
+})();
+</script>
+</body>
+</html>
