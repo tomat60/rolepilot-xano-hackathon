@@ -1,0 +1,67 @@
+name: Upwork RolePilot Synthetic UI Evidence
+on:
+  push:
+    paths: ['.github/workflows/upwork-local-ui-evidence.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Capture actual RolePilot source UI with explicitly synthetic offline fixture
+        run: |
+          mkdir -p portfolio-evidence
+          python - <<'PY'
+          import os, json
+          from playwright.sync_api import sync_playwright
+          data=[
+            {'id':1,'title':'Independent Film Casting','brand':'Synthetic Studio A','deadline':'Sample brief · synthetic dataset','status':'READY','raw_text':'Seeking an English-speaking actor with self-tape and current headshot.'},
+            {'id':2,'title':'Commercial Voiceover','brand':'Synthetic Studio B','deadline':'Sample brief · synthetic dataset','status':'RECORD','raw_text':'Voiceover with new audition required.'},
+            {'id':3,'title':'Creative Production Lead','brand':'Synthetic Studio C','deadline':'Sample brief · synthetic dataset','status':'REVIEW','raw_text':'Production coordinator role.'},
+          ]
+          analysis={'analysis':{'readiness':92,'summary':'Required headshot and profile available. External submission remains subject to human approval.','requirements':['Current headshot','English introduction','Production availability confirmation'],'assets':['Approved headshot · synthetic fixture','English introduction · synthetic fixture'],'gaps':['Confirm availability'],'can_prepare':True}}
+          def mock(route):
+              url=route.request.url
+              if url.endswith('/opportunities'): body=data
+              elif url.endswith('/analyze'): body=analysis
+              elif url.endswith('/runs'): body={'run':{'id':1001},'audit_events':['Synthetic application preparation recorded','Approved asset list attached','Waiting for human approval']}
+              elif '/approval' in url: body={'approved':True}
+              else: return route.abort()
+              return route.fulfill(status=200,content_type='application/json',body=json.dumps(body))
+          with sync_playwright() as p:
+              browser=p.chromium.launch()
+              page=browser.new_page(viewport={'width':1440,'height':950},device_scale_factor=1)
+              page.route('**/api:rolepilot/**',mock)
+              page.goto('file://' + os.path.abspath('index.html'),wait_until='domcontentloaded')
+              page.locator('#analyze').click(timeout=10000)
+              page.wait_for_timeout(400)
+              page.evaluate("""() => {
+                document.getElementById('liveLabel').textContent='LOCAL PROTOTYPE · SYNTHETIC FIXTURE';
+                document.querySelectorAll('footer span')[0].textContent='Offline source UI capture · public Xano host unavailable';
+                const badge=document.createElement('div');
+                badge.textContent='OFFLINE DEMONSTRATION / NO LIVE API CLAIM';
+                badge.style='background:#ffe095;color:#111;padding:8px 14px;border-radius:8px;letter-spacing:1px;font:700 12px Inter,sans-serif';
+                document.querySelector('.top').appendChild(badge);
+              }""")
+              page.screenshot(path='portfolio-evidence/rolepilot-source-ui.png',full_page=True)
+              page.locator('#prepare').click(timeout=10000)
+              page.wait_for_timeout(500)
+              page.screenshot(path='portfolio-evidence/rolepilot-source-with-approval-gate.png',full_page=True)
+              print('True UI source = index.html; ALL data = synthetic fixtures; NOT live Xano API')
+              browser.close()
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rolepilot-genuine-source-ui-synthetic
+          path: portfolio-evidence/*.png
+          retention-days: 10
+          if-no-files-found: error
