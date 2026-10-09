@@ -51,6 +51,15 @@ jobs:
                   page.wait_for_timeout(2500)
                   page.screenshot(path='portfolio-proof/revenue-recovery-live.png',full_page=True)
                   print(json.dumps({'capture':'Revenue Recovery demo actual live page','title':page.title(),'url':page.url}))
+                  for label,filename in [('Run normal recovery','revenue-recovery-normal.png'),('Run safety escalation','revenue-recovery-escalation.png')]:
+                      button=page.get_by_role('button',name=label)
+                      if button.count():
+                          button.click(timeout=6000)
+                          page.wait_for_timeout(900)
+                          page.screenshot(path='portfolio-proof/'+filename,full_page=True)
+                          print('Verified actual synthetic UI interaction:',label)
+                      else:
+                          print('Missing expected button:',label)
               except Exception as e:
                   print('Revenue Recovery public live site capture unavailable:',str(e))
               browser.close()
