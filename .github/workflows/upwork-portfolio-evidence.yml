@@ -55,7 +55,7 @@ jobs:
                       button=page.get_by_role('button',name=label)
                       if button.count():
                           button.click(timeout=6000)
-                          page.wait_for_timeout(900)
+                          page.wait_for_timeout(12000)  # wait for the seven-stage UI sequence, not the initial animation
                           page.screenshot(path='portfolio-proof/'+filename,full_page=True)
                           print('Verified actual synthetic UI interaction:',label)
                       else:
