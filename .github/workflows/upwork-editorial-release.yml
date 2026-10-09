@@ -1,0 +1,47 @@
+name: Upwork Editorial Portfolio Release
+on:
+  push:
+    paths:
+      - 'tools/render-upwork-release.py'
+      - '.github/workflows/upwork-editorial-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pillow==10.4.0
+      - name: Fetch verified screenshot evidence from same repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source
+          gh run download 37970689449 -R tomat60/rolepilot-xano-hackathon -n rolepilot-genuine-source-ui-synthetic -D source
+          gh run download 37970719948 -R tomat60/rolepilot-xano-hackathon -n upwork-genuine-ui-evidence -D source
+          test -s source/rolepilot-source-ui.png
+          test -s source/revenue-recovery-normal.png
+      - name: Produce 1000x750 truthful screenshot-driven covers
+        run: python tools/render-upwork-release.py
+      - name: Assert files are full size, legible and not empty
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          for name in ['revenue-recovery-cover.png','rolepilot-cover.png']:
+              im=Image.open('release/'+name)
+              assert im.size==(1000,750),im.size
+              assert im.getbbox() is not None
+              print(name,im.size)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: upwork-portfolio-two-editorial-covers
+          path: release/*.png
+          if-no-files-found: error
+          retention-days: 14
