@@ -1,0 +1,58 @@
+name: Upwork Portfolio Evidence Capture
+on:
+  push:
+    paths:
+      - '.github/workflows/upwork-portfolio-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install browser for real screenshot capture
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Screenshot actual deployed RolePilot UI
+        run: |
+          mkdir -p portfolio-proof
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          import json
+          with sync_playwright() as p:
+              browser=p.chromium.launch(headless=True)
+              page=browser.new_page(viewport={'width':1440,'height':950},device_scale_factor=1)
+              try:
+                  page.goto('https://default-prod-d95b66-xtbm-3nan-h5yy.f2.xano.io',wait_until='domcontentloaded',timeout=35000)
+                  page.wait_for_timeout(5000)
+                  if page.locator('#analyze').is_visible():
+                      page.locator('#analyze').click(timeout=10000)
+                      page.wait_for_timeout(2500)
+                  page.screenshot(path='portfolio-proof/rolepilot-live.png',full_page=True)
+                  status=page.locator('#liveLabel').inner_text(timeout=2000) if page.locator('#liveLabel').count() else 'unknown'
+                  print(json.dumps({'capture':'RolePilot actual live app','title':page.title(),'status':status,'url':page.url}))
+              except Exception as e:
+                  print('Live capture failed:',str(e))
+                  page.goto('file://' + __import__('os').path.abspath('index.html'),wait_until='domcontentloaded')
+                  page.wait_for_timeout(2500)
+                  page.screenshot(path='portfolio-proof/rolepilot-local-unconnected.png',full_page=True)
+                  print('NOT_VALIDATED_LIVE; local UI evidence only')
+              page.goto('https://www.paweltomczak.com/revenue-recovery/demo/',wait_until='domcontentloaded',timeout=35000)
+              page.wait_for_timeout(2500)
+              page.screenshot(path='portfolio-proof/revenue-recovery-live.png',full_page=True)
+              print(json.dumps({'capture':'Revenue Recovery demo actual live page','title':page.title(),'url':page.url}))
+              browser.close()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upwork-genuine-ui-evidence
+          path: portfolio-proof/*.png
+          retention-days: 10
+          if-no-files-found: warn
